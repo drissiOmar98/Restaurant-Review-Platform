@@ -51,7 +51,20 @@ public class ReviewController {
                 .build();
     }
 
+    @GetMapping
+    public Page<ReviewDto> listReviews(
+            @PathVariable String restaurantId,
+            @PageableDefault(
+                    size = 20,
+                    page = 0,
+                    sort = "datePosted",
+                    direction = Sort.Direction.DESC) Pageable pageable
+    ) {
 
+        return reviewService
+                .listReviews(restaurantId, pageable)
+                .map(reviewMapper::toDto);
+    }
 
 
 
