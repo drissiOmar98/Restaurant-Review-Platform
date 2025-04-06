@@ -35,6 +35,23 @@ public class RestaurantController {
     }
 
 
+    @GetMapping
+    public Page<RestaurantSummaryDto> searchRestaurants(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) Float minRating,
+            @RequestParam(required = false) Float latitude,
+            @RequestParam(required = false) Float longitude,
+            @RequestParam(required = false) Float radius,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size
+    ){
+        Page<Restaurant> searchResults = restaurantService.searchRestaurants(
+                q, minRating, latitude, longitude, radius, PageRequest.of(page - 1, size)
+        );
+
+        return searchResults.map(restaurantMapper::toSummaryDto);
+    }
+
 
 
 }
