@@ -120,6 +120,59 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
 
+    @Override
+    public Review updateReview(User author, String restaurantId, String reviewId, ReviewCreateUpdateRequest review) {
+        Restaurant restaurant = getRestaurantOrThrow(restaurantId);
+
+        String authorId = author.getId();
+        Review existingReview = getReviewFromRestaurant(reviewId, restaurant)
+                .orElseThrow(() -> new ReviewNotAllowedException("Review does not exist"));
+
+        if(!authorId.equals(existingReview.getWrittenBy().getId())) {
+            throw new ReviewNotAllowedException("Cannot update another user's review");
+        }
+
+        if(LocalDateTime.now().isAfter(existingReview.getDatePosted().plusHours(48))) {
+            throw new ReviewNotAllowedException("Review can no longer bew edited");
+        }
+
+        existingReview.setContent(review.getContent());
+        existingReview.setRating(review.getRating());
+        existingReview.setLastEdited(LocalDateTime.now());
+
+        existingReview.setPhotos(review.getPhotoIds().stream()
+                .map(photoId -> Photo.builder()
+                        .url(photoId)
+                        .uploadDate(LocalDateTime.now())
+                        .build()).toList());
+
+        List<Review> updatedReviews = restaurant.getReviews().stream()
+                .filter(r -> !reviewId.equals(r.getId()))
+                .collect(Collectors.toList());
+        updatedReviews.add(existingReview);
+
+        restaurant.setReviews(updatedReviews);
+
+        updateRestaurantAverageRating(restaurant);
+
+        restaurantRepository.save(restaurant);
+
+        return existingReview;
+    }
+
+    @Override
+    public void deleteReview(String restaurantId, String reviewId) {
+        Restaurant restaurant = getRestaurantOrThrow(restaurantId);
+        List<Review> filteredReviews = restaurant.getReviews().stream()
+                .filter(r -> !reviewId.equals(r.getId()))
+                .toList();
+
+        restaurant.setReviews(filteredReviews);
+
+        updateRestaurantAverageRating(restaurant);
+
+        restaurantRepository.save(restaurant);
+    }
 
     private Restaurant getRestaurantOrThrow(String restaurantId) {
         return restaurantRepository.findById(restaurantId)
