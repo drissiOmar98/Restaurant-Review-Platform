@@ -67,5 +67,19 @@ public class ReviewController {
     }
 
 
+    @GetMapping(path = "/{reviewId}")
+    public ResponseEntity<ReviewDto> getReview(
+            @PathVariable String restaurantId,
+            @PathVariable String reviewId
+    ) {
+        return reviewService.getReview(restaurantId, reviewId)
+                .map(reviewMapper::toDto)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+
+
+
 
 }
